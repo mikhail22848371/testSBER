@@ -1,0 +1,46 @@
+import json
+from datetime import datetime
+
+# Чтение данных из файла JSON
+with open('operations.json', 'r', encoding='utf-8') as file:
+    operations = json.load(file)
+
+
+# Функция для маскировки номера карты
+def mask_card_number(card_number):
+    index = 0
+    for i in range(0, len(card_number)):
+        if card_number[i].isdigit():
+            index += i
+            break
+
+    masked_card = card_number[0: index] + card_number[index:index + 4] + ' ' + card_number[
+                                                                               index + 6: index + 8] + "**" + " **** " + card_number[
+                                                                                                                         -4:]
+    return masked_card
+
+
+# Функция для маскировки номера счета
+def mask_account_number(account_number):
+    masked_number = 'Счет ' + '**' + account_number[-4:]
+    return masked_number
+
+
+# Форматирование операции для вывода
+def format_operation(operation):
+    operation_date = datetime.strptime(operation['date'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%d.%m.%Y')
+    masked_from = mask_card_number(operation.get('from', ''))
+    masked_to = mask_account_number(operation['to'])
+    amount = operation['operationAmount']['amount']
+    currency = operation['operationAmount']['currency']['name']
+    return f"{operation_date} {operation['description']}\n{masked_from} -> {masked_to}\n{amount} {currency}"
+
+
+# Фильтрация выполненных операций и сортировка по дате в обратном порядке
+executed_operations = sorted((op for op in operations if op.get('state') == 'EXECUTED'), key=lambda x: x['date'],
+                             reverse=True)
+
+# Вывод последних 5 выполненных операций
+for operation in executed_operations[:5]:
+    print(format_operation(operation))
+    print()
